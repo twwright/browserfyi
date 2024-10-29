@@ -1,6 +1,30 @@
 'use strict';
 
-// Icon Components
+// ICON COMPONENTS //
+//
+const RefreshIcon = () => {
+  return React.createElement("svg", {
+    xmlns: "http://www.w3.org/2000/svg",
+    viewBox: "0 0 24 24",
+    className: "w-5 h-5",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: "2",
+    strokeLinecap: "round",
+    strokeLinejoin: "round"
+  }, [
+    React.createElement("path", {
+      d: "M23 4v6h-6"
+    }),
+    React.createElement("path", {
+      d: "M1 20v-6h6"
+    }),
+    React.createElement("path", {
+      d: "M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"
+    })
+  ]);
+};
+
 const BrowserIcon = () => {
   return React.createElement("svg", {
     xmlns: "http://www.w3.org/2000/svg",
@@ -168,6 +192,51 @@ const CookieIcon = () => {
   }));
 };
 
+const LocationIcon = () => {
+  return React.createElement("svg", {
+    xmlns: "http://www.w3.org/2000/svg",
+    viewBox: "0 0 24 24",
+    className: "w-6 h-6"
+  }, React.createElement("path", {
+    d: "M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z",
+    fill: "#EEF2FF",
+    stroke: "#6366F1",
+    strokeWidth: "1.5"
+  }), React.createElement("circle", {
+    cx: "12",
+    cy: "9",
+    r: "2.5",
+    fill: "#6366F1"
+  }));
+};
+
+const IpIcon = () => {
+  return React.createElement("svg", {
+    xmlns: "http://www.w3.org/2000/svg",
+    viewBox: "0 0 24 24",
+    className: "w-6 h-6"
+  }, React.createElement("rect", {
+    x: "3",
+    y: "3",
+    width: "18",
+    height: "18",
+    rx: "2",
+    fill: "#EEF2FF",
+    stroke: "#6366F1",
+    strokeWidth: "1.5"
+  }), React.createElement("text", {
+    x: "6",
+    y: "16",
+    fill: "#6366F1",
+    fontSize: "12",
+    fontFamily: "monospace",
+    fontWeight: "bold"
+  }, "IP"));
+};
+
+// BROWSER COMPONENTS //
+//
+//
 const BrowserInfo = () => {
   const reportRef = React.useRef(null);
   const [info, setInfo] = React.useState({
@@ -192,8 +261,8 @@ const BrowserInfo = () => {
     cookies: false,
   });
 
-  React.useEffect(() => {
-    // Detect browser info
+  // Function to refresh stats
+  const refreshStats = () => {
     const ua = navigator.userAgent;
     let browserName = 'Unknown';
     let browserVersion = '';
@@ -212,7 +281,7 @@ const BrowserInfo = () => {
     // Enhanced OS detection
     let os = 'Unknown';
     let osVersion = '';
-    
+
     // macOS detection
     if (ua.includes('Mac OS X')) {
       os = 'macOS';
@@ -260,7 +329,6 @@ const BrowserInfo = () => {
       if (matches) osVersion = matches[1];
     }
 
-    // Update state with detected info
     setInfo({
       browser: {
         name: browserName,
@@ -282,6 +350,10 @@ const BrowserInfo = () => {
       javascript: true,
       cookies: navigator.cookieEnabled,
     });
+  };
+
+  React.useEffect(() => {
+    refreshStats();
   }, []);
 
   const downloadAsImage = async () => {
@@ -311,7 +383,7 @@ const BrowserInfo = () => {
       }
     }
   };
-  
+
   const InfoCard = ({ icon: Icon, title, children }) => {
     return React.createElement("div", {
       className: "bg-white rounded-lg p-4 shadow-sm border border-indigo-100"
@@ -325,122 +397,143 @@ const BrowserInfo = () => {
       className: "text-gray-700 font-mono pl-9 text-sm"
     }, children));
   };
-  
+
   return React.createElement("div", {
-    className: "min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-blue-900 p-6"
-  }, React.createElement("div", {
-    className: "max-w-3xl mx-auto"
-  }, React.createElement("div", {
-    className: "bg-white/95 backdrop-blur rounded-xl shadow-xl p-8 mb-8 border border-indigo-200"
-  }, 
-    // Content to be captured
-    React.createElement("div", {
-      ref: reportRef,
-      className: "mb-8"
+      className: "min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-blue-900 p-6"
+    }, React.createElement("div", {
+      className: "max-w-3xl mx-auto"
+    }, React.createElement("div", {
+      className: "bg-white/95 backdrop-blur rounded-xl shadow-xl p-8 mb-8 border border-indigo-200"
     },
-      // Header
+      // Content to be captured
       React.createElement("div", {
-        className: "flex items-baseline mb-6"
-      }, React.createElement("h1", {
-        className: "text-2xl font-mono font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent"
-      }, "browser.fyi")),
-      
-      // Date
-      React.createElement("p", {
-        className: "text-indigo-900 mb-6 font-mono"
-      }, "Report generated on ", new Date().toLocaleDateString('en-GB', {
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric'
-      })),
-      
-      // Info Cards Grid
-      React.createElement("div", {
-        className: "grid grid-cols-2 gap-x-6 gap-y-3"
-      }, 
+        ref: reportRef,
+        className: "p-8 bg-white rounded-xl"
+      },
+        // Header with Refresh Button
         React.createElement("div", {
-          className: "space-y-3"
-        }, 
-          React.createElement(InfoCard, {
-            icon: BrowserIcon,
-            title: "Browser"
-          }, info.browser.name, React.createElement("br"), info.browser.version),
-          
-          React.createElement(InfoCard, {
-            icon: DeviceIcon,
-            title: "Device"
-          }, info.device.os, " ", info.device.osVersion, React.createElement("br"), info.device.type),
-          
-          React.createElement(InfoCard, {
-            icon: JavaScriptIcon,
-            title: "JavaScript"
-          }, info.javascript ? 'Available' : 'Not Available')
+          className: "flex items-center justify-between mb-6"
+        },
+          React.createElement("h1", {
+            className: "text-2xl font-mono font-bold text-indigo-600"
+          }, "browser.fyi"),
+          React.createElement("button", {
+            onClick: refreshStats,
+            className: "text-indigo-600 hover:text-indigo-700 transition-colors p-2 rounded-full hover:bg-indigo-50"
+          }, React.createElement(RefreshIcon))
         ),
-        
+
+        // Date
+        React.createElement("p", {
+          className: "text-indigo-900 mb-6 font-mono"
+        }, "Report generated on ", new Date().toLocaleDateString('en-GB', {
+          day: 'numeric',
+          month: 'long',
+          year: 'numeric'
+        })),
+
+        // Info Cards Grid
         React.createElement("div", {
-          className: "space-y-3"
-        }, 
-          React.createElement(InfoCard, {
-            icon: ScreenIcon,
-            title: "Screen"
-          }, "Width: ", info.screen.width, "px", React.createElement("br"), "Height: ", info.screen.height, "px"),
-          
-          React.createElement(InfoCard, {
-            icon: ViewportIcon,
-            title: "Viewport"
-          }, "Width: ", info.viewport.width, "px", React.createElement("br"), "Height: ", info.viewport.height, "px"),
-          
-          React.createElement(InfoCard, {
-            icon: CookieIcon,
-            title: "Cookies"
-          }, info.cookies ? 'Available' : 'Not Available')
+          className: "grid grid-cols-2 gap-x-6 gap-y-3"
+        },
+          React.createElement("div", {
+            className: "space-y-3"
+          },
+            React.createElement(InfoCard, {
+              icon: BrowserIcon,
+              title: "Browser"
+            }, info.browser.name, React.createElement("br"), info.browser.version),
+
+            React.createElement(InfoCard, {
+              icon: DeviceIcon,
+              title: "Device"
+            }, info.device.os, " ", info.device.osVersion, React.createElement("br"), info.device.type),
+
+            React.createElement(InfoCard, {
+              icon: JavaScriptIcon,
+              title: "JavaScript"
+            }, info.javascript ? 'Available' : 'Not Available')
+          ),
+
+          React.createElement("div", {
+            className: "space-y-3"
+          },
+            React.createElement(InfoCard, {
+              icon: ScreenIcon,
+              title: "Screen"
+            }, "Width: ", info.screen.width, "px", React.createElement("br"), "Height: ", info.screen.height, "px"),
+
+            React.createElement(InfoCard, {
+              icon: ViewportIcon,
+              title: "Viewport"
+            }, "Width: ", info.viewport.width, "px", React.createElement("br"), "Height: ", info.viewport.height, "px"),
+
+            React.createElement(InfoCard, {
+              icon: CookieIcon,
+              title: "Cookies"
+            }, info.cookies ? 'Available' : 'Not Available')
+          )
         )
-      )
-    ),
-    
-    // Share Section (outside of capture area)
+      ),
+
+      // Share Section (outside of capture area)
+      React.createElement("div", {
+        className: "border-t border-indigo-200 pt-6"
+      },
+        React.createElement("h2", {
+          className: "text-xl font-mono font-semibold text-indigo-900 mb-4"
+        }, "Share this information"),
+
+        React.createElement("p", {
+          className: "text-indigo-800 mb-4 font-mono"
+        }, "Click the button below to download this report as an image that you can easily share."),
+
+        React.createElement("button", {
+          onClick: downloadAsImage,
+          className: "w-full bg-indigo-600 hover:bg-indigo-700 text-white font-mono py-3 px-6 rounded-lg transition-colors flex items-center justify-center gap-2 shadow-md"
+        }, React.createElement("svg", {
+          className: "w-5 h-5",
+          viewBox: "0 0 24 24",
+          fill: "none",
+          stroke: "currentColor",
+          strokeWidth: "2",
+          strokeLinecap: "round",
+          strokeLinejoin: "round"
+        }, React.createElement("path", {
+          d: "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"
+        }), React.createElement("polyline", {
+          points: "7 10 12 15 17 10"
+        }), React.createElement("line", {
+          x1: "12",
+          y1: "15",
+          x2: "12",
+          y2: "3"
+        })), "DOWNLOAD AS IMAGE")
+      ),
+
+      // Privacy Notice (outside of capture area)
+      React.createElement("div", {
+        className: "mt-4 bg-indigo-50 rounded-lg p-4"
+      }, React.createElement("p", {
+        className: "font-mono text-sm text-indigo-800"
+      }, "All information is collected anonymously and cannot be used to identify you or your device."))
+      ),
+
+    // Credit text (added below the main white box)
     React.createElement("div", {
-      className: "border-t border-indigo-200 pt-6"
-    }, 
-      React.createElement("h2", {
-        className: "text-xl font-mono font-semibold text-indigo-900 mb-4"
-      }, "Share this information"),
-      
-      React.createElement("p", {
-        className: "text-indigo-800 mb-4 font-mono"
-      }, "Click the button below to download this report as an image that you can easily share."),
-      
-      React.createElement("button", {
-        onClick: downloadAsImage,
-        className: "w-full bg-indigo-600 hover:bg-indigo-700 text-white font-mono py-3 px-6 rounded-lg transition-colors flex items-center justify-center gap-2 shadow-md"
-      }, React.createElement("svg", {
-        className: "w-5 h-5",
-        viewBox: "0 0 24 24",
-        fill: "none",
-        stroke: "currentColor",
-        strokeWidth: "2",
-        strokeLinecap: "round",
-        strokeLinejoin: "round"
-      }, React.createElement("path", {
-        d: "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"
-      }), React.createElement("polyline", {
-        points: "7 10 12 15 17 10"
-      }), React.createElement("line", {
-        x1: "12",
-        y1: "15",
-        x2: "12",
-        y2: "3"
-      })), "DOWNLOAD AS IMAGE")
-    ),
-    
-    // Privacy Notice (outside of capture area)
-    React.createElement("div", {
-      className: "mt-4 bg-indigo-50 rounded-lg p-4"
-    }, React.createElement("p", {
-      className: "font-mono text-sm text-indigo-800"
-    }, "All information is collected anonymously and cannot be used to identify you or your device."))
-  )));
+      className: "text-white/75 text-center text-sm font-mono mt-4"
+    },
+      "made with ⚡️ by ",
+      React.createElement("a", {
+        href: "http://linkedin.com/in/wrightclick",
+        target: "_blank",
+        rel: "noopener noreferrer",
+        className: "text-white/75 hover:text-white transition-colors"
+      }, "thomas")
+    )
+  ));
 };
+
 
 // Mount the app
 const root = ReactDOM.createRoot(document.getElementById('root'));
