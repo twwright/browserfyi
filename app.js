@@ -1,540 +1,397 @@
 'use strict';
 
-// ICON COMPONENTS //
-//
-const RefreshIcon = () => {
-  return React.createElement("svg", {
-    xmlns: "http://www.w3.org/2000/svg",
-    viewBox: "0 0 24 24",
-    className: "w-5 h-5",
-    fill: "none",
-    stroke: "currentColor",
-    strokeWidth: "2",
-    strokeLinecap: "round",
-    strokeLinejoin: "round"
-  }, [
-    React.createElement("path", {
-      d: "M23 4v6h-6"
-    }),
-    React.createElement("path", {
-      d: "M1 20v-6h6"
-    }),
-    React.createElement("path", {
-      d: "M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"
-    })
-  ]);
+const { createElement: h, useState, useEffect, useRef } = React;
+
+// ── Icon helpers ────────────────────────────────────────────────────────────
+const Icon = ({ d, viewBox = '0 0 24 24' }) =>
+  h('svg', {
+    xmlns: 'http://www.w3.org/2000/svg',
+    viewBox,
+    className: 'w-5 h-5 text-violet-400',
+    fill: 'none',
+    stroke: 'currentColor',
+    strokeWidth: '2',
+    strokeLinecap: 'round',
+    strokeLinejoin: 'round',
+  }, h('path', { d }));
+
+const icons = {
+  globe: (props) => Icon({ ...props, d: 'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zM2 12h20M12 2a15 15 0 0 1 4 10 15 15 0 0 1-4 10 15 15 0 0 1-4-10A15 15 0 0 1 12 2z' }),
+  mapPin: (props) => Icon({ ...props, d: 'M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 1 1 18 0zM12 13a3 3 0 1 0 0-6 3 3 0 0 0 0 6z' }),
+  monitor: (props) => Icon({ ...props, d: 'M2 3h20v14H2zM8 21h8M12 17v4' }),
+  terminal: (props) => Icon({ ...props, d: 'M4 17l6-6-6-6M12 19h8' }),
+  refresh: (props) => Icon({ ...props, d: 'M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15' }),
+  download: (props) => Icon({ ...props, d: 'M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3' }),
+  copy: (props) => Icon({ ...props, d: 'M20 9h-9a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h9a2 2 0 0 0 2-2v-9a2 2 0 0 0-2-2zM5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1' }),
+  check: (props) => Icon({ ...props, d: 'M20 6L9 17l-5-5' }),
+  screen: (props) => Icon({ ...props, d: 'M2 3h20v14H2zM8 21h8M12 17v4' }),
+  layers: (props) => Icon({ ...props, d: 'M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5' }),
 };
 
-const BrowserIcon = () => {
-  return React.createElement("svg", {
-    xmlns: "http://www.w3.org/2000/svg",
-    viewBox: "0 0 24 24",
-    className: "w-6 h-6"
-  }, React.createElement("circle", {
-    cx: "12",
-    cy: "12",
-    r: "10",
-    fill: "#E0E7FF",
-    stroke: "#6366F1",
-    strokeWidth: "1.5"
-  }), React.createElement("path", {
-    d: "M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10",
-    stroke: "#6366F1",
-    strokeWidth: "1.5",
-    fill: "none"
-  }), React.createElement("path", {
-    d: "M2 12h20M12 2c-3 4.5-3 15 0 20",
-    stroke: "#6366F1",
-    strokeWidth: "1.5",
-    opacity: "0.5"
-  }));
-};
+// ── Data collection ─────────────────────────────────────────────────────────
 
-const DeviceIcon = () => {
-  return React.createElement("svg", {
-    xmlns: "http://www.w3.org/2000/svg",
-    viewBox: "0 0 24 24",
-    className: "w-6 h-6"
-  }, React.createElement("rect", {
-    x: "2",
-    y: "4",
-    width: "20",
-    height: "14",
-    rx: "2",
-    fill: "#EEF2FF",
-    stroke: "#6366F1",
-    strokeWidth: "1.5"
-  }), React.createElement("rect", {
-    x: "7",
-    y: "18",
-    width: "10",
-    height: "2",
-    fill: "#6366F1"
-  }), React.createElement("rect", {
-    x: "4",
-    y: "6",
-    width: "16",
-    height: "10",
-    fill: "#E0E7FF"
-  }));
-};
+function detectBrowser(ua) {
+  if (ua.includes('Edg/')) {
+    const v = ua.match(/Edg\/([0-9.]+)/);
+    return { name: 'Edge', version: v ? v[1] : '' };
+  }
+  if (ua.includes('OPR/') || ua.includes('Opera')) {
+    const v = ua.match(/OPR\/([0-9.]+)/) || ua.match(/Opera\/([0-9.]+)/);
+    return { name: 'Opera', version: v ? v[1] : '' };
+  }
+  if (ua.includes('Brave')) {
+    const v = ua.match(/Chrome\/([0-9.]+)/);
+    return { name: 'Brave', version: v ? v[1] : '' };
+  }
+  if (ua.includes('Chrome') && !ua.includes('Edg') && !ua.includes('OPR')) {
+    const v = ua.match(/Chrome\/([0-9.]+)/);
+    return { name: 'Chrome', version: v ? v[1] : '' };
+  }
+  if (ua.includes('Firefox')) {
+    const v = ua.match(/Firefox\/([0-9.]+)/);
+    return { name: 'Firefox', version: v ? v[1] : '' };
+  }
+  if (ua.includes('Safari') && !ua.includes('Chrome')) {
+    const v = ua.match(/Version\/([0-9.]+)/);
+    return { name: 'Safari', version: v ? v[1] : '' };
+  }
+  return { name: 'Unknown', version: '' };
+}
 
-const ScreenIcon = () => {
-  return React.createElement("svg", {
-    xmlns: "http://www.w3.org/2000/svg",
-    viewBox: "0 0 24 24",
-    className: "w-6 h-6"
-  }, React.createElement("rect", {
-    x: "2",
-    y: "3",
-    width: "20",
-    height: "14",
-    rx: "2",
-    fill: "#EEF2FF",
-    stroke: "#6366F1",
-    strokeWidth: "1.5"
-  }), React.createElement("path", {
-    d: "M8 21h8M12 17v4",
-    stroke: "#6366F1",
-    strokeWidth: "1.5"
-  }), React.createElement("rect", {
-    x: "4",
-    y: "5",
-    width: "16",
-    height: "10",
-    fill: "#E0E7FF"
-  }));
-};
+function detectEngine(ua) {
+  if (ua.includes('Gecko/') && ua.includes('Firefox')) {
+    const v = ua.match(/rv:([0-9.]+)/);
+    return { name: 'Gecko', version: v ? v[1] : '' };
+  }
+  if (ua.includes('AppleWebKit/')) {
+    const v = ua.match(/AppleWebKit\/([0-9.]+)/);
+    if (ua.includes('Chrome')) {
+      return { name: 'Blink', version: v ? v[1] : '' };
+    }
+    return { name: 'WebKit', version: v ? v[1] : '' };
+  }
+  return { name: 'Unknown', version: '' };
+}
 
-const ViewportIcon = () => {
-  return React.createElement("svg", {
-    xmlns: "http://www.w3.org/2000/svg",
-    viewBox: "0 0 24 24",
-    className: "w-6 h-6"
-  }, React.createElement("rect", {
-    x: "3",
-    y: "3",
-    width: "18",
-    height: "18",
-    rx: "2",
-    fill: "#EEF2FF",
-    stroke: "#6366F1",
-    strokeWidth: "1.5"
-  }), React.createElement("path", {
-    d: "M7 7h10M7 12h10M7 17h10",
-    stroke: "#6366F1",
-    strokeWidth: "1.5",
-    strokeLinecap: "round"
-  }));
-};
+function detectOS(ua) {
+  const macOSNames = {
+    '10.13': 'High Sierra', '10.14': 'Mojave', '10.15': 'Catalina',
+    '11': 'Big Sur', '12': 'Monterey', '13': 'Ventura',
+    '14': 'Sonoma', '15': 'Sequoia',
+  };
 
-const JavaScriptIcon = () => {
-  return React.createElement("svg", {
-    xmlns: "http://www.w3.org/2000/svg",
-    viewBox: "0 0 24 24",
-    className: "w-6 h-6"
-  }, React.createElement("rect", {
-    x: "3",
-    y: "3",
-    width: "18",
-    height: "18",
-    rx: "2",
-    fill: "#EEF2FF",
-    stroke: "#6366F1",
-    strokeWidth: "1.5"
-  }), React.createElement("text", {
-    x: "6",
-    y: "16",
-    fill: "#6366F1",
-    fontSize: "12",
-    fontFamily: "monospace",
-    fontWeight: "bold"
-  }, "JS"));
-};
+  if (ua.includes('Mac OS X')) {
+    const m = ua.match(/Mac OS X ([0-9._]+)/);
+    if (m) {
+      const ver = m[1].replace(/_/g, '.');
+      const major = ver.split('.').slice(0, 2).join('.');
+      const majorOnly = ver.split('.')[0];
+      const name = macOSNames[major] || macOSNames[majorOnly];
+      // Always include version number; append friendly name if known
+      return { os: 'macOS', osVersion: name ? `${name} (${ver})` : ver };
+    }
+    return { os: 'macOS', osVersion: '' };
+  }
+  if (ua.includes('Windows')) {
+    const ntMatch = ua.match(/Windows NT ([0-9.]+)/);
+    const ntVer = ntMatch ? ntMatch[1] : '';
+    const winNames = { '10.0': '10/11', '6.3': '8.1', '6.2': '8', '6.1': '7' };
+    const name = winNames[ntVer];
+    return { os: 'Windows', osVersion: name ? `${name} (NT ${ntVer})` : ntVer };
+  }
+  if (ua.includes('Android')) {
+    const m = ua.match(/Android ([0-9.]+)/);
+    return { os: 'Android', osVersion: m ? m[1] : '' };
+  }
+  if (/iPhone|iPad|iPod/.test(ua)) {
+    const m = ua.match(/OS ([0-9_]+)/);
+    return { os: 'iOS', osVersion: m ? m[1].replace(/_/g, '.') : '' };
+  }
+  if (ua.includes('Linux')) {
+    if (ua.includes('Ubuntu')) return { os: 'Linux', osVersion: 'Ubuntu' };
+    if (ua.includes('Fedora')) return { os: 'Linux', osVersion: 'Fedora' };
+    if (ua.includes('Debian')) return { os: 'Linux', osVersion: 'Debian' };
+    return { os: 'Linux', osVersion: '' };
+  }
+  return { os: 'Unknown', osVersion: '' };
+}
 
-const CookieIcon = () => {
-  return React.createElement("svg", {
-    xmlns: "http://www.w3.org/2000/svg",
-    viewBox: "0 0 24 24",
-    className: "w-6 h-6"
-  }, React.createElement("circle", {
-    cx: "12",
-    cy: "12",
-    r: "9",
-    fill: "#EEF2FF",
-    stroke: "#6366F1",
-    strokeWidth: "1.5"
-  }), React.createElement("circle", {
-    cx: "9",
-    cy: "10",
-    r: "1",
-    fill: "#6366F1"
-  }), React.createElement("circle", {
-    cx: "15",
-    cy: "9",
-    r: "1",
-    fill: "#6366F1"
-  }), React.createElement("circle", {
-    cx: "8",
-    cy: "14",
-    r: "1",
-    fill: "#6366F1"
-  }), React.createElement("circle", {
-    cx: "16",
-    cy: "14",
-    r: "1",
-    fill: "#6366F1"
-  }), React.createElement("circle", {
-    cx: "12",
-    cy: "16",
-    r: "1",
-    fill: "#6366F1"
-  }));
-};
+function detectDeviceType(ua) {
+  if (/iPad|tablet/i.test(ua)) return 'Tablet';
+  if (/Mobile|Android|iPhone|iPod/.test(ua)) return 'Mobile';
+  return 'Desktop';
+}
 
-const LocationIcon = () => {
-  return React.createElement("svg", {
-    xmlns: "http://www.w3.org/2000/svg",
-    viewBox: "0 0 24 24",
-    className: "w-6 h-6"
-  }, React.createElement("path", {
-    d: "M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z",
-    fill: "#EEF2FF",
-    stroke: "#6366F1",
-    strokeWidth: "1.5"
-  }), React.createElement("circle", {
-    cx: "12",
-    cy: "9",
-    r: "2.5",
-    fill: "#6366F1"
-  }));
-};
+function collectClientData() {
+  const ua = navigator.userAgent;
+  const browser = detectBrowser(ua);
+  const engine = detectEngine(ua);
+  const { os, osVersion } = detectOS(ua);
+  const deviceType = detectDeviceType(ua);
 
-const IpIcon = () => {
-  return React.createElement("svg", {
-    xmlns: "http://www.w3.org/2000/svg",
-    viewBox: "0 0 24 24",
-    className: "w-6 h-6"
-  }, React.createElement("rect", {
-    x: "3",
-    y: "3",
-    width: "18",
-    height: "18",
-    rx: "2",
-    fill: "#EEF2FF",
-    stroke: "#6366F1",
-    strokeWidth: "1.5"
-  }), React.createElement("text", {
-    x: "6",
-    y: "16",
-    fill: "#6366F1",
-    fontSize: "12",
-    fontFamily: "monospace",
-    fontWeight: "bold"
-  }, "IP"));
-};
-
-// BROWSER COMPONENTS //
-//
-//
-const BrowserInfo = () => {
-  const reportRef = React.useRef(null);
-  const [info, setInfo] = React.useState({
-    browser: {
-      name: '',
-      version: '',
+  return {
+    browser: { name: browser.name, version: browser.version },
+    engine: { name: engine.name, version: engine.version },
+    device: { os, osVersion, type: deviceType },
+    connection: {
+      protocol: location.protocol === 'https:' ? 'HTTPS' : 'HTTP',
+      host: location.host || 'localhost',
+      method: 'GET',
+      path: location.pathname || '/',
     },
-    screen: {
-      width: 0,
-      height: 0,
-    },
-    device: {
-      os: '',
-      osVersion: '',
-      type: '',
-    },
-    viewport: {
-      width: 0,
-      height: 0,
-    },
+    screen: { width: window.screen.width, height: window.screen.height },
+    viewport: { width: window.innerWidth, height: window.innerHeight },
     javascript: true,
-    cookies: false,
+    cookies: navigator.cookieEnabled,
+    userAgent: ua,
+  };
+}
+
+async function fetchIPData() {
+  try {
+    const res = await fetch('https://ipinfo.io/json');
+    if (!res.ok) throw new Error('IP API error');
+    const data = await res.json();
+    const [lat, lng] = (data.loc || '').split(',');
+    const orgParts = (data.org || '').match(/^(AS\d+)\s+(.+)$/);
+    const isp = orgParts ? orgParts[2] : (data.org || '');
+    return {
+      address: data.ip || '',
+      isp,
+      city: data.city || '',
+      region: data.region || '',
+      country: data.country || '',
+      countryCode: data.country || '',
+      timezone: data.timezone || '',
+      lat: lat || '',
+      lng: lng || '',
+    };
+  } catch {
+    return null;
+  }
+}
+
+async function fetchHeaders() {
+  try {
+    const res = await fetch('https://httpbin.org/headers');
+    if (!res.ok) throw new Error('Headers API error');
+    const data = await res.json();
+    return data.headers || {};
+  } catch {
+    return null;
+  }
+}
+
+// ── UI Components ───────────────────────────────────────────────────────────
+
+const DataRow = ({ label, value }) =>
+  h('div', { className: 'mb-2 last:mb-0' },
+    h('div', { className: 'text-xs uppercase tracking-wider text-slate-400/70 mb-0.5' }, label),
+    h('div', { className: 'text-sm font-mono text-slate-300 break-all' }, value || '\u2014'),
+  );
+
+const Card = ({ icon, title, children }) =>
+  h('div', {
+    className: 'bg-slate-800/50 rounded-xl p-5 border border-slate-700/50',
+  },
+    h('div', { className: 'flex items-center gap-2 mb-4' },
+      h(icon, null),
+      h('h2', { className: 'text-xs font-semibold uppercase tracking-wider text-slate-400' }, title),
+    ),
+    children,
+  );
+
+// ── Main App ────────────────────────────────────────────────────────────────
+
+const BrowserInfo = () => {
+  const [clientData, setClientData] = useState(collectClientData);
+  const [ipData, setIpData] = useState(null);
+  const [headers, setHeaders] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [copied, setCopied] = useState(false);
+
+  const loadExternalData = async () => {
+    setLoading(true);
+    const [ip, hdrs] = await Promise.all([fetchIPData(), fetchHeaders()]);
+    setIpData(ip);
+    setHeaders(hdrs);
+    setLoading(false);
+  };
+
+  const refresh = () => {
+    setClientData(collectClientData());
+    loadExternalData();
+  };
+
+  useEffect(() => { loadExternalData(); }, []);
+
+  // ── Build JSON report ───────────────────────────────────────────────────
+
+  const buildReport = () => ({
+    generatedAt: new Date().toISOString(),
+    ip: ipData || { address: 'Unavailable' },
+    browser: clientData.browser,
+    engine: clientData.engine,
+    device: clientData.device,
+    connection: clientData.connection,
+    display: {
+      screen: clientData.screen,
+      viewport: clientData.viewport,
+    },
+    features: {
+      javascript: clientData.javascript,
+      cookies: clientData.cookies,
+    },
+    userAgent: clientData.userAgent,
+    headers: headers || {},
   });
 
-  // Function to refresh stats
-  const refreshStats = () => {
-    const ua = navigator.userAgent;
-    let browserName = 'Unknown';
-    let browserVersion = '';
+  // ── Export functions ────────────────────────────────────────────────────
 
-    if (ua.includes('Chrome')) {
-      browserName = 'Chrome';
-      browserVersion = ua.match(/Chrome\/([0-9.]+)/)[1];
-    } else if (ua.includes('Firefox')) {
-      browserName = 'Firefox';
-      browserVersion = ua.match(/Firefox\/([0-9.]+)/)[1];
-    } else if (ua.includes('Safari') && !ua.includes('Chrome')) {
-      browserName = 'Safari';
-      browserVersion = ua.match(/Version\/([0-9.]+)/)[1];
-    }
-
-    // Enhanced OS detection
-    let os = 'Unknown';
-    let osVersion = '';
-
-    // macOS detection
-    if (ua.includes('Mac OS X')) {
-      os = 'macOS';
-      const macOSVersion = ua.match(/Mac OS X ([0-9._]+)/);
-      if (macOSVersion) {
-        const version = macOSVersion[1].replace(/_/g, '.');
-        // Map version numbers to names
-        const macOSNames = {
-          '10.13': 'High Sierra',
-          '10.14': 'Mojave',
-          '10.15': 'Catalina',
-          '11': 'Big Sur',
-          '12': 'Monterey',
-          '13': 'Ventura',
-          '14': 'Sonoma'
-        };
-        const majorVersion = version.split('.').slice(0, 2).join('.');
-        osVersion = macOSNames[majorVersion] || version;
-      }
-    }
-    // Windows detection
-    else if (ua.includes('Windows')) {
-      os = 'Windows';
-      if (ua.includes('Windows NT 10.0')) osVersion = '10/11';
-      else if (ua.includes('Windows NT 6.3')) osVersion = '8.1';
-      else if (ua.includes('Windows NT 6.2')) osVersion = '8';
-      else if (ua.includes('Windows NT 6.1')) osVersion = '7';
-    }
-    // Linux detection
-    else if (ua.includes('Linux')) {
-      os = 'Linux';
-      if (ua.includes('Ubuntu')) osVersion = 'Ubuntu';
-      else if (ua.includes('Fedora')) osVersion = 'Fedora';
-      else if (ua.includes('Debian')) osVersion = 'Debian';
-    }
-    // iOS/Android detection
-    else if (ua.includes('iOS')) {
-      os = 'iOS';
-      const matches = ua.match(/OS ([0-9_]+)/);
-      if (matches) osVersion = matches[1].replace(/_/g, '.');
-    }
-    else if (ua.includes('Android')) {
-      os = 'Android';
-      const matches = ua.match(/Android ([0-9.]+)/);
-      if (matches) osVersion = matches[1];
-    }
-
-    setInfo({
-      browser: {
-        name: browserName,
-        version: browserVersion,
-      },
-      screen: {
-        width: window.screen.width,
-        height: window.screen.height,
-      },
-      device: {
-        os,
-        osVersion,
-        type: /Mobile|Android|iOS/.test(ua) ? 'Mobile' : 'Desktop',
-      },
-      viewport: {
-        width: window.innerWidth,
-        height: window.innerHeight,
-      },
-      javascript: true,
-      cookies: navigator.cookieEnabled,
-    });
-  };
-
-  React.useEffect(() => {
-    refreshStats();
-  }, []);
-
-  const downloadAsImage = async () => {
-    if (reportRef.current && window.html2canvas) {
-      try {
-        const canvas = await window.html2canvas(reportRef.current, {
-          backgroundColor: 'white',
-          scale: 2,
-          logging: false,
-          useCORS: true,
-          windowWidth: reportRef.current.offsetWidth,
-          windowHeight: reportRef.current.offsetHeight
-        });
-
-        canvas.toBlob((blob) => {
-          const url = window.URL.createObjectURL(blob);
-          const link = document.createElement('a');
-          link.href = url;
-          link.download = `browser-report-${new Date().toISOString().split('T')[0]}.png`;
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-          window.URL.revokeObjectURL(url);
-        }, 'image/png');
-      } catch (err) {
-        console.error('Failed to generate image:', err);
-      }
+  const copyJSON = async () => {
+    try {
+      await navigator.clipboard.writeText(JSON.stringify(buildReport(), null, 2));
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Fallback for older browsers
+      const ta = document.createElement('textarea');
+      ta.value = JSON.stringify(buildReport(), null, 2);
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
     }
   };
 
-  const InfoCard = ({ icon: Icon, title, children }) => {
-    return React.createElement("div", {
-      className: "bg-white rounded-lg p-4 shadow-sm border border-indigo-100"
-    }, React.createElement("div", {
-      className: "flex items-center gap-3 mb-2"
-    }, React.createElement("div", {
-      className: "flex-shrink-0"
-    }, React.createElement(Icon, null)), React.createElement("h2", {
-      className: "text-lg font-mono text-indigo-600"
-    }, title)), React.createElement("div", {
-      className: "text-gray-700 font-mono pl-9 text-sm"
-    }, children));
+  const downloadAsJSON = () => {
+    const blob = new Blob([JSON.stringify(buildReport(), null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `browser-report-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
-  return React.createElement("div", {
-      className: "min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-blue-900 p-6"
-    }, React.createElement("div", {
-      className: "max-w-3xl mx-auto"
-    }, React.createElement("div", {
-      className: "bg-white/95 backdrop-blur rounded-xl shadow-xl p-8 mb-8 border border-indigo-200"
-    },
-      // Content to be captured
-      React.createElement("div", {
-        ref: reportRef,
-        className: "p-8 bg-white rounded-xl"
-      },
-        // Header with Refresh Button
-        React.createElement("div", {
-          className: "flex items-center justify-between mb-6"
-        },
-          React.createElement("h1", {
-            className: "text-2xl font-mono font-bold text-indigo-600"
-          }, "browser.fyi"),
-          React.createElement("button", {
-            onClick: refreshStats,
-            className: "text-indigo-600 hover:text-indigo-700 transition-colors p-2 rounded-full hover:bg-indigo-50"
-          }, React.createElement(RefreshIcon))
+  // ── Render ──────────────────────────────────────────────────────────────
+
+  const ip = ipData || {};
+
+  return h('div', { className: 'min-h-screen bg-gradient-to-br from-slate-900 via-violet-950 to-slate-900 p-4 md:p-8' },
+    h('div', { className: 'max-w-3xl mx-auto' },
+
+      // ── Main card ────────────────────────────────────────────────────
+      h('div', { className: 'bg-slate-900/80 backdrop-blur-sm rounded-2xl shadow-2xl border border-slate-700/50 overflow-hidden' },
+
+        // Header bar
+        h('div', { className: 'flex items-center justify-between px-5 md:px-8 pt-6 pb-2' },
+          h('div', { className: 'flex items-center gap-2' },
+            h('div', { className: 'w-2 h-2 rounded-full bg-violet-400' }),
+            h('span', { className: 'text-sm font-mono font-semibold text-slate-400 tracking-wide' }, 'browser.fyi'),
+          ),
+          h('button', {
+            onClick: refresh,
+            className: 'text-slate-500 hover:text-violet-400 transition-colors p-1.5 rounded-lg hover:bg-slate-800',
+            title: 'Refresh',
+          }, h(icons.refresh)),
         ),
 
-        // Date
-        React.createElement("p", {
-          className: "text-indigo-900 mb-6 font-mono"
-        }, "Report generated on ", new Date().toLocaleDateString('en-GB', {
-          day: 'numeric',
-          month: 'long',
-          year: 'numeric'
-        })),
+        // Content
+        h('div', { className: 'px-5 md:px-8 py-6 space-y-5' },
 
-        // Info Cards Grid
-        React.createElement("div", {
-          className: "grid grid-cols-2 gap-x-6 gap-y-3"
-        },
-          React.createElement("div", {
-            className: "space-y-3"
-          },
-            React.createElement(InfoCard, {
-              icon: BrowserIcon,
-              title: "Browser"
-            }, info.browser.name, React.createElement("br"), info.browser.version),
+          // ── Row 1: Browser & Device + Display (2 cols) ──────────────
+          h('div', { className: 'grid grid-cols-1 md:grid-cols-2 gap-4' },
 
-            React.createElement(InfoCard, {
-              icon: DeviceIcon,
-              title: "Device"
-            }, info.device.os, " ", info.device.osVersion, React.createElement("br"), info.device.type),
+            h(Card, { icon: icons.monitor, title: 'Browser & Device' },
+              h(DataRow, { label: 'Browser', value: `${clientData.browser.name} ${clientData.browser.version}` }),
+              h(DataRow, { label: 'Operating System', value: `${clientData.device.os} ${clientData.device.osVersion}`.trim() }),
+              h(DataRow, { label: 'Device Type', value: clientData.device.type }),
+              h(DataRow, { label: 'Engine', value: `${clientData.engine.name} ${clientData.engine.version}`.trim() }),
+            ),
 
-            React.createElement(InfoCard, {
-              icon: JavaScriptIcon,
-              title: "JavaScript"
-            }, info.javascript ? 'Available' : 'Not Available')
+            h(Card, { icon: icons.screen, title: 'Display' },
+              h(DataRow, { label: 'Screen', value: `${clientData.screen.width} x ${clientData.screen.height}` }),
+              h(DataRow, { label: 'Viewport', value: `${clientData.viewport.width} x ${clientData.viewport.height}` }),
+              h(DataRow, { label: 'JavaScript', value: clientData.javascript ? 'Enabled' : 'Disabled' }),
+              h(DataRow, { label: 'Cookies', value: clientData.cookies ? 'Enabled' : 'Disabled' }),
+            ),
           ),
 
-          React.createElement("div", {
-            className: "space-y-3"
-          },
-            React.createElement(InfoCard, {
-              icon: ScreenIcon,
-              title: "Screen"
-            }, "Width: ", info.screen.width, "px", React.createElement("br"), "Height: ", info.screen.height, "px"),
+          // ── Row 2: Network & Location (full width) ──────────────────
+          h(Card, { icon: icons.mapPin, title: 'Network & Location' },
+            h('div', { className: 'grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-2' },
+              h(DataRow, { label: 'IP Address', value: loading && !ip.address ? 'Loading...' : (ip.address || 'Unavailable') }),
+              h(DataRow, { label: 'ISP', value: ip.isp }),
+              h(DataRow, { label: 'City', value: ip.city }),
+              h(DataRow, { label: 'Region', value: ip.region }),
+              h(DataRow, { label: 'Country', value: ip.country }),
+              h(DataRow, { label: 'Timezone', value: ip.timezone }),
+              h(DataRow, { label: 'Coordinates', value: ip.lat && ip.lng ? `${ip.lat}, ${ip.lng}` : '' }),
+            ),
+          ),
 
-            React.createElement(InfoCard, {
-              icon: ViewportIcon,
-              title: "Viewport"
-            }, "Width: ", info.viewport.width, "px", React.createElement("br"), "Height: ", info.viewport.height, "px"),
+          // ── Raw User Agent ──────────────────────────────────────────
+          h('div', { className: 'bg-slate-800/30 rounded-xl p-5 border border-slate-700/50' },
+            h('div', { className: 'flex items-center gap-2 mb-3' },
+              h(icons.terminal),
+              h('h2', { className: 'text-xs font-semibold uppercase tracking-wider text-slate-400' }, 'Raw User Agent'),
+            ),
+            h('p', { className: 'text-sm font-mono text-slate-400 break-all leading-relaxed' }, clientData.userAgent),
+          ),
 
-            React.createElement(InfoCard, {
-              icon: CookieIcon,
-              title: "Cookies"
-            }, info.cookies ? 'Available' : 'Not Available')
-          )
-        )
+          // Generated date
+          h('p', { className: 'text-xs text-slate-500 font-mono text-right' },
+            'Generated ', new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }),
+          ),
+        ),
+
+        // ── Export section ─────────────────────────────────────────────
+        h('div', { className: 'px-5 md:px-8 py-6 border-t border-slate-700/50' },
+          h('div', { className: 'flex flex-col sm:flex-row gap-3' },
+            h('button', {
+              onClick: copyJSON,
+              className: `flex-1 flex items-center justify-center gap-2 ${copied ? 'bg-emerald-600' : 'bg-violet-600 hover:bg-violet-500'} text-white font-mono text-sm py-3 px-5 rounded-xl transition-colors`,
+            },
+              copied ? h(icons.check) : h(icons.copy),
+              copied ? 'Copied!' : 'Copy JSON',
+            ),
+            h('button', {
+              onClick: downloadAsJSON,
+              className: 'flex-1 flex items-center justify-center gap-2 bg-slate-700 hover:bg-slate-600 text-slate-200 font-mono text-sm py-3 px-5 rounded-xl transition-colors',
+            },
+              h(icons.download),
+              'Download JSON',
+            ),
+          ),
+          h('p', { className: 'text-xs text-slate-500 font-mono mt-4 text-center' },
+            'All information is collected locally in your browser. Nothing is stored or sent to any server.',
+          ),
+        ),
+      ), // end main card
+
+      // Credit
+      h('div', { className: 'text-slate-500 text-center text-xs font-mono mt-4' },
+        'made with ',
+        h('span', null, '\u26A1\uFE0F'),
+        ' by ',
+        h('a', {
+          href: 'https://linkedin.com/in/wrightclick',
+          target: '_blank',
+          rel: 'noopener noreferrer',
+          className: 'text-slate-500 hover:text-violet-400 transition-colors underline underline-offset-2',
+        }, 'thomas'),
       ),
-
-      // Share Section (outside of capture area)
-      React.createElement("div", {
-        className: "border-t border-indigo-200 pt-6"
-      },
-        React.createElement("h2", {
-          className: "text-xl font-mono font-semibold text-indigo-900 mb-4"
-        }, "Share this information"),
-
-        React.createElement("p", {
-          className: "text-indigo-800 mb-4 font-mono"
-        }, "Click the button below to download this report as an image that you can easily share."),
-
-        React.createElement("button", {
-          onClick: downloadAsImage,
-          className: "w-full bg-indigo-600 hover:bg-indigo-700 text-white font-mono py-3 px-6 rounded-lg transition-colors flex items-center justify-center gap-2 shadow-md"
-        }, React.createElement("svg", {
-          className: "w-5 h-5",
-          viewBox: "0 0 24 24",
-          fill: "none",
-          stroke: "currentColor",
-          strokeWidth: "2",
-          strokeLinecap: "round",
-          strokeLinejoin: "round"
-        }, React.createElement("path", {
-          d: "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"
-        }), React.createElement("polyline", {
-          points: "7 10 12 15 17 10"
-        }), React.createElement("line", {
-          x1: "12",
-          y1: "15",
-          x2: "12",
-          y2: "3"
-        })), "DOWNLOAD AS IMAGE")
-      ),
-
-      // Privacy Notice (outside of capture area)
-      React.createElement("div", {
-        className: "mt-4 bg-indigo-50 rounded-lg p-4"
-      }, React.createElement("p", {
-        className: "font-mono text-sm text-indigo-800"
-      }, "All information is collected anonymously and cannot be used to identify you or your device."))
-      ),
-
-    // Credit text (added below the main white box)
-    React.createElement("div", {
-      className: "text-white/75 text-center text-sm font-mono mt-4"
-    },
-      "made with ⚡️ by ",
-      React.createElement("a", {
-        href: "http://linkedin.com/in/wrightclick",
-        target: "_blank",
-        rel: "noopener noreferrer",
-        className: "text-white/75 hover:text-white transition-colors"
-      }, "thomas")
-    )
-  ));
+    ),
+  );
 };
 
-
-// Mount the app
+// Mount
 const root = ReactDOM.createRoot(document.getElementById('root'));
-root.render(React.createElement(BrowserInfo));
+root.render(h(BrowserInfo));
